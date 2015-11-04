@@ -26,7 +26,7 @@ listen {{ cluster_name }}
 {% endfor %}
 {% endif %}
 {% set not_region = 'iad' if region == 'ord' else 'ord' %}
-{% for host in haproxy_backend_servers %}
+{% for host in [1,2,3] %}
   server {{ cluster_name }}-g-p{{ host }}.{{ region }}.rakr.net {{ cluster_name }}-g-p{{ host }}.{{ region }}.rakr.net check
 {% endfor %}
 {% for host in [1,2,3] %}
