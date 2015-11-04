@@ -7,14 +7,18 @@ haproxy_group: haproxy
 # Frontend settings.
 haproxy_frontend_name: 'hafrontend'
 haproxy_frontend_bind_address: '*'
-haproxy_frontend_port: 80
-haproxy_frontend_mode: 'http'
+haproxy_frontend_port: 3306
+haproxy_frontend_mode: 'tcp'
 
 # Backend settings.
 haproxy_backend_name: 'habackend'
 haproxy_backend_mode: 'http'
-haproxy_backend_balance_method: 'roundrobin'
-haproxy_backend_httpchk: 'HEAD / HTTP/1.1\r\nHost:localhost'
+haproxy_backend_options:
+  - 'tcplog'
+  - 'mysql-check user haproxy'
+  - 'allbackups'
+# haproxy_backend_balance_method: 'roundrobin'
+# haproxy_backend_httpchk: 'HEAD / HTTP/1.1\r\nHost:localhost'
 
 # List of backend servers.
 haproxy_backend_servers: []
@@ -22,3 +26,13 @@ haproxy_backend_servers: []
   #   address: 192.168.0.1:80
   # - name: app2
   #   address: 192.168.0.2:80
+
+haproxy_stats_port: 8080
+haproxy_stats_mode: http
+haproxy_stats_options:
+  - enable
+  - 'uri /'
+  - 'realm Private'
+
+haproxy_stats_authuser: 'rswebteam'
+haproxy_stats_authpass: ''

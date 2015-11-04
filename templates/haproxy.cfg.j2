@@ -1,51 +1,50 @@
 global
-  log /dev/log  local0
-  log /dev/log  local1 notice
-{% if haproxy_socket != '' %}
-  stats socket {{ haproxy_socket }} level admin
+{% if ansible_eth1.active %}
+  log  {{ ansible_eth1.ipv4.address }} local0
+{% else %}
+  log /dev/log local0
 {% endif %}
-{% if haproxy_chroot != '' %}
-  chroot {{ haproxy_chroot }}
-{% endif %}
-  user {{ haproxy_user }}
-  group {{ haproxy_group }}
-  daemon
 
 defaults
-  log global
-  mode  http
-  option  httplog
-  option  dontlognull
-{% if haproxy_version == '1.4' %}
-        contimeout 5000
-        clitimeout 50000
-        srvtimeout 50000
+  log  global
+  retries  3
+  timeout  connect 3000
+  timeout  server 5000
+  timeout  client 5000
+
+listen {{ cluster_name }}
+{% if ansible_eth1.active == true %}
+  bind {{ ansible_eth1.ipv4.address }}:{{ haproxy_frontend_port }}
 {% else %}
-        timeout connect 5000
-        timeout client 50000
-        timeout server 50000
+  bind {{ ansible_all_ipv4_addresses[0] }}:{{ haproxy_frontend_port }}
 {% endif %}
-{% if ansible_os_family == 'Debian' %}
-  errorfile 400 /etc/haproxy/errors/400.http
-  errorfile 403 /etc/haproxy/errors/403.http
-  errorfile 408 /etc/haproxy/errors/408.http
-  errorfile 500 /etc/haproxy/errors/500.http
-  errorfile 502 /etc/haproxy/errors/502.http
-  errorfile 503 /etc/haproxy/errors/503.http
-  errorfile 504 /etc/haproxy/errors/504.http
-{% endif %}
-
-frontend {{ haproxy_frontend_name }}
-    bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }}
-    mode {{ haproxy_frontend_mode }}
-    default_backend {{ haproxy_backend_name }}
-
-backend {{ haproxy_backend_name }}
-    mode {{ haproxy_backend_mode }}
-    balance {{ haproxy_backend_balance_method }}
-    option forwardfor
-    option httpchk {{ haproxy_backend_httpchk }}
-    cookie SERVERID insert indirect
-{% for backend in haproxy_backend_servers %}
-    server {{ backend.name }} {{ backend.address }} cookie {{ backend.name }} check
+  mode  {{ haproxy_frontend_mode }}
+  balance  {{ haproxy_backend_balance_method }}
+{% if haproxy_backend_options|length > 0 %}
+{% for opt in haproxy_backend_options %}
+  option {{ opt }}
 {% endfor %}
+{% endif %}
+{% set not_region = 'iad' if region == 'ord' else 'ord' %}
+{% for host in haproxy_backend_servers %}
+  server {{ cluster_name }}-g-p{{ host }}.{{ region }}.rakr.net {{ cluster_name }}-g-p{{ host }}.{{ region }}.rakr.net check
+{% endfor %}
+{% for host in [1,2,3] %}
+  server {{ cluster_name }}-g-p{{ host }}.{{ not_region }}.rakr.net {{ cluster_name }}-g-p{{ host }}.{{ not_region }}.rakr.net backup check
+{% endfor %}
+
+listen {{ cluster_name }}-stats
+{% if ansible_eth1.active == true %}
+  bind {{ ansible_eth1.ipv4.address }}:{{ haproxy_stats_port }}
+{% else %}
+  bind {{ ansible_all_ipv4_addresses[0] }}:{{ haproxy_stats_port }}
+{% endif %}
+  mode  {{ haproxy_stats_mode }}
+{% if haproxy_stats_options|length > 0 %}
+{% for opt in haproxy_stats_options %}
+  stats {{ opt }}
+{% endfor %}
+{% endif %}
+{% if haproxy_stats_authuser and haproxy_stats_authpass %}
+  stats auth {{ haproxy_stats_authuser }}:{{ haproxy_stats_authpass }}
+{% endif %}
