@@ -19,7 +19,7 @@ defaults
   timeout  client 5000
 
 frontend {{ haproxy_frontend_name }}
-{% if haproxy_frontend_ssl_cert %}
+{% if haproxy_frontend_ssl_cert|default(false)|bool == true %}
     bind :443 ssl crt {{ haproxy_frontend_ssl_cert }}
 {% else %}
     bind {{ haproxy_frontend_bind_address }}:{{ haproxy_frontend_port }}
