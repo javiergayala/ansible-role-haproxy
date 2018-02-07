@@ -38,4 +38,3 @@ backend {{ haproxy_backend_name }}
 {% for backend in haproxy_backend_servers %}
     server {{ backend.name }} {{ backend.address }}:{{ backend.port }} cookie {{ backend.name }} check
 {% endfor %}
-{% endif %}
