@@ -1,6 +1,6 @@
 global
-{% if ansible_eth1.active %}
-  log  {{ ansible_eth1.ipv4.address }} local0
+{% if ansible_default_ipv4.address %}
+  log  {{ ansible_default_ipv4.address }} local0
 {% else %}
   log /dev/log local0
 {% endif %}
